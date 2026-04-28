@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Gestión de Proyectos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .progress {
+            background: #eee;
+            height: 8px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .question-container {
+            display: none;
+        }
+
+        .question-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .question-number {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .question-image {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .question-image img {
+            max-width: 100%;
+            height: auto;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .question-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .option input[type="radio"] {
+            margin-right: 15px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .option label {
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .justification {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-restart {
+            background: #28a745;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-restart:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .results-container {
+            display: none;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .score {
+            font-size: 48px;
+            color: #667eea;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .results-list {
+            margin-top: 25px;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .result-item.correct {
+            border-left-color: #28a745;
+        }
+
+        .result-question {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .result-answer {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .result-justification {
+            font-size: 13px;
+            color: #555;
+            font-style: italic;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+        }
+
+        .counter {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Quiz Gestión de Proyectos</h1>
+            <p id="counter" class="counter">Pregunta 1 de 10</p>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width: 10%"></div>
+            </div>
+        </div>
+
+        <div id="quizContainer">
+            <!-- Las preguntas se cargarán aquí dinámicamente -->
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <div class="results-header">
+                <h2>Resultados</h2>
+                <div class="score" id="finalScore">10/10</div>
+                <p id="scoreMessage">¡Excelente!</p>
+            </div>
+            <div class="results-list" id="resultsList">
+                <!-- Los resultados se cargarán aquí -->
+            </div>
+            <button class="btn-restart back-btn" onclick="location.reload()">Volver a Comenzar</button>
+        </div>
+    </div>
+
+    <script>
+        // Datos de preguntas - 10 aleatorias de las 51 disponibles
+        const allQuestions = {
+            1: {
+                text: "¿Cómo se llama la herramienta que se utiliza como tablero de gestión de proyectos?",
+                options: { a: "Notion", b: "Trello", c: "Miro", d: "Chat GPT" },
+                correct: "b",
+                justification: "Trello es una plataforma basada en el método Kanban que permite organizar tareas mediante tarjetas dentro de tableros visuales.",
+                image: null
+            },
+            2: {
+                text: "¿Cómo se llama la herramienta que se utiliza para documentar la gestión de proyectos?",
+                options: { a: "Notion", b: "Trello", c: "Miro", d: "Chat GPT" },
+                correct: "a",
+                justification: "Notion es una herramienta integral para crear wikis, bases de conocimiento y documentos colaborativos.",
+                image: null
+            },
+            3: {
+                text: "¿Cómo se llama la herramienta que es un chat de inteligencia artificial?",
+                options: { a: "Notion", b: "Trello", c: "Miro", d: "Chat GPT" },
+                correct: "d",
+                justification: "Se trata de un modelo de lenguaje optimizado para la interacción conversacional y asistencia general.",
+                image: null
+            },
+            4: {
+                text: "¿Cómo se llama la herramienta que se utiliza para hacer retros?",
+                options: { a: "Notion", b: "Trello", c: "Miro", d: "Chat GPT" },
+                correct: "c",
+                justification: "Miro funciona como una pizarra infinita donde los equipos pueden realizar dinámicas visuales grupales.",
+                image: null
+            },
+            5: {
+                text: "Persona que se encarga de la gestión del proyecto",
+                options: { a: "Ejecutivo", b: "Comisión de proyecto", c: "Director del proyecto", d: "Equipo de proyecto" },
+                correct: "c",
+                justification: "El Director de Proyecto es el responsable de planificar, ejecutar y cerrar el proyecto.",
+                image: null
+            },
+            6: {
+                text: "¿En qué fase de la gestión de un proyecto se realizan las estimaciones de esfuerzo, coste y recursos?",
+                options: { a: "Estudio de factibilidad", b: "Planificación", c: "Ejecución", d: "Seguimiento", e: "Cierre" },
+                correct: "b",
+                justification: "En esta fase se define la hoja de ruta y se calculan los recursos necesarios.",
+                image: null
+            },
+            7: {
+                text: "¿A qué metodología hace mención esta imagen? (Imagen con columnas To do/Doing/Done)",
+                options: { a: "Scrum", b: "Kanban", c: "Cascada", d: "Cynefin" },
+                correct: "b",
+                justification: "La visualización del flujo de trabajo por estados en columnas es la base de Kanban.",
+                image: "Pregunta 7.png"
+            },
+            8: {
+                text: "Una de las ventajas del método en cascada es:",
+                options: { a: "Promueve una comunicación continua", b: "Cada fase tiene entregables específicos", c: "Ayuda a reducir cuellos de botella" },
+                correct: "b",
+                justification: "Al ser un modelo secuencial, cada etapa finaliza con un producto concreto.",
+                image: null
+            },
+            9: {
+                text: "La gestión de un proyecto es la estimación y administración de los proyectos, sin importar los tiempos de ejecución ni el cumplimiento de objetivos",
+                options: { a: "Verdadero", b: "Falso" },
+                correct: "b",
+                justification: "La gestión de proyectos se orienta precisamente a cumplir objetivos dentro de restricciones.",
+                image: null
+            },
+            10: {
+                text: "¿Cuáles son las ventajas de planificar?",
+                options: { a: "Ayuda a asignar recursos y evita completamente los riesgos", b: "Asegura que no se requiera comunicación", c: "Ayuda a asignar recursos y minimizar riesgos", d: "Garantiza que no sea necesario establecer objetivos" },
+                correct: "c",
+                justification: "Planificar permite anticipar problemas y optimizar recursos.",
+                image: null
+            },
+            11: {
+                text: "¿Qué es el alcance de un proyecto?",
+                options: { a: "La duración estimada", b: "Los recursos financieros", c: "Qué está incluido y excluido en términos de trabajo", d: "Las partes interesadas involucradas" },
+                correct: "c",
+                justification: "El alcance define las fronteras del trabajo para evitar que el proyecto crezca.",
+                image: null
+            },
+            12: {
+                text: "La WBS es un conjunto de instrucciones detalladas para realizar una tarea específica",
+                options: { a: "Verdadero", b: "Falso" },
+                correct: "b",
+                justification: "La WBS es una descomposición jerárquica del alcance total del proyecto.",
+                image: null
+            },
+            13: {
+                text: "¿Qué es un proyecto según PMI?",
+                options: { a: "Una actividad continua", b: "Un esfuerzo temporal para crear un resultado único", c: "Una serie de tareas rutinarias", d: "Una técnica de gestión" },
+                correct: "b",
+                justification: "Según el estándar global, un proyecto debe tener inicio y fin definidos.",
+                image: null
+            },
+            14: {
+                text: "¿Qué características principales debe tener un proyecto?",
+                options: { a: "Ser rutinaria y repetitiva", b: "Tener duración indefinida", c: "Ser un esfuerzo temporal y único", d: "No requerir recursos" },
+                correct: "c",
+                justification: "Se diferencia de las operaciones diarias por su carácter temporal.",
+                image: null
+            },
+            15: {
+                text: "¿Cuáles son los pasos para planificar un proyecto?",
+                options: { a: "Lanzamiento, Diseño, Ejecución, Cierre", b: "Definir Alcance, Comunicarse, Implementar, Evaluar", c: "Estudio, Ejecución, Seguimiento, Cierre", d: "Objetivo, Alcance, Recursos, Costes, Riesgos, Documento, Desglose, Calendarización" },
+                correct: "d",
+                justification: "Esta secuencia cubre desde la visión general hasta la estructuración.",
+                image: null
+            },
+            16: {
+                text: "¿Qué empresa impulsó la técnica de los 5 porqués?",
+                options: { a: "Toyota", b: "Apple", c: "Microsoft", d: "Amazon" },
+                correct: "a",
+                justification: "Técnica de análisis originada en los sistemas de producción de Toyota.",
+                image: null
+            },
+            17: {
+                text: "¿Por qué es necesario planificar un proyecto?",
+                options: { a: "Ayuda a establecer objetivos y determinar recursos necesarios", b: "Es donde se materializa todas las ideas", c: "Para evitar cambios imprevistos", d: "Para garantizar que no haya desafíos" },
+                correct: "a",
+                justification: "Proporciona la dirección para que el equipo trabaje hacia una meta común.",
+                image: null
+            },
+            18: {
+                text: "¿Qué es la holgura en el método CPM?",
+                options: { a: "El tiempo adicional asignado a una actividad", b: "La cantidad de recursos disponibles", c: "El número de actividades", d: "El costo total del proyecto" },
+                correct: "a",
+                justification: "Es el margen de tiempo que una tarea puede retrasarse sin afectar.",
+                image: null
+            },
+            19: {
+                text: "¿Cuál es el camino crítico? (Basado en diagrama)",
+                options: { a: "Inicio-A-D-Fin", b: "Inicio-A-C-E-Fin", c: "Inicio-A-B-E-Fin" },
+                correct: "b",
+                justification: "Es la ruta donde las actividades no tienen margen de retraso.",
+                image: "Pregunta 19.png"
+            },
+            20: {
+                text: "¿Cuánto es la holgura de D? (Cálculo sobre el nodo D)",
+                options: { a: "1", b: "7", c: "15" },
+                correct: "b",
+                justification: "Restando el final temprano del final tardío obtenemos holgura de 7.",
+                image: "Pregunta 20.png"
+            },
+            21: {
+                text: "¿Cuál es el valor de la holgura en una actividad que está en la ruta crítica?",
+                options: { a: "Positiva", b: "Cero", c: "Negativa", d: "Tres" },
+                correct: "b",
+                justification: "Por definición, cualquier retraso en la ruta crítica afecta el final.",
+                image: null
+            },
+            22: {
+                text: "¿Qué elementos son esenciales en un diagrama CPM?",
+                options: { a: "Nodos y fechas", b: "Flechas y presupuesto", c: "Nodos y flechas", d: "Tareas y nombres" },
+                correct: "c",
+                justification: "Los nodos representan hitos y las flechas las actividades.",
+                image: null
+            },
+            23: {
+                text: "¿Cuál es el propósito de crear un diagrama de red?",
+                options: { a: "Asignar recursos", b: "Definir hitos", c: "Identificar ruta corta", d: "Visualizar dependencias entre actividades" },
+                correct: "d",
+                justification: "Permite ver gráficamente qué tareas dependen de otras.",
+                image: null
+            },
+            24: {
+                text: "¿Qué es un diagrama PERT?",
+                options: { a: "Una herramienta para analizar tareas para completar proyecto", b: "Un gráfico de barras que muestra plazos", c: "Se enfoca en compensaciones de tiempo-costo" },
+                correct: "a",
+                justification: "Es una técnica probabilística para programar tareas.",
+                image: null
+            },
+            25: {
+                text: "¿Cuál es una característica clave de las actividades en ruta crítica?",
+                options: { a: "Son independientes entre sí", b: "Tienen margen de tiempo", c: "Están interconectadas y dependen unas de otras" },
+                correct: "c",
+                justification: "Forman la secuencia más larga que dicta la duración del proyecto.",
+                image: null
+            },
+            26: {
+                text: "¿Cuál es el propósito principal de un diagrama de Gantt?",
+                options: { a: "Visualizar datos financieros", b: "Mostrar estructura organizativa", c: "Representar el cronograma de un proyecto" },
+                correct: "c",
+                justification: "Es la herramienta visual para mostrar la planificación temporal.",
+                image: null
+            },
+            27: {
+                text: "¿Cuál es la diferencia clave entre Gantt y PERT?",
+                options: { a: "Gantt se usa para programar tareas por fecha", b: "PERT es más adecuado para pequeños", c: "Gantt es más adecuado para pequeños" },
+                correct: "a",
+                justification: "Gantt se enfoca en calendario, PERT en lógica de interdependencias.",
+                image: null
+            },
+            28: {
+                text: "¿Cuál es una característica común de Gantt?",
+                options: { a: "Capacidad de asignar recursos", b: "Actualización en tiempo real", c: "Representación de jerarquía organizativa" },
+                correct: "a",
+                justification: "Permite asociar responsables o materiales a cada bloque.",
+                image: null
+            },
+            29: {
+                text: "¿Qué representa un diagrama de Gantt?",
+                options: { a: "Flujos de trabajo", b: "Fechas de inicio y finalización de tareas", c: "Un organigrama" },
+                correct: "b",
+                justification: "Muestra la extensión temporal de cada actividad.",
+                image: null
+            },
+            30: {
+                text: "¿Para qué se utiliza un diagrama de Gantt?",
+                options: { a: "Programar reuniones", b: "Gestionar proyectos y tareas", c: "Crear gráficos de barra" },
+                correct: "b",
+                justification: "Esencial para controlar tiempos y avance de la obra.",
+                image: null
+            },
+            31: {
+                text: "¿Qué tipo de información proporciona un diagrama de Gantt?",
+                options: { a: "Historias de usuario", b: "Duración estimada de una tarea", c: "El alcance acordado" },
+                correct: "b",
+                justification: "Permite visualizar cuántos días o semanas tomará una tarea.",
+                image: null
+            },
+            32: {
+                text: "¿Cuál es la característica clave de un diagrama de Gantt?",
+                options: { a: "Muestra línea de tiempo en rectángulos", b: "Representa solo tareas críticas", c: "No se usa en gestión de proyectos" },
+                correct: "a",
+                justification: "Se compone de barras proporcionales a duración.",
+                image: null
+            },
+            33: {
+                text: "¿Qué representan las barras en un diagrama de Gantt?",
+                options: { a: "Horas del día", b: "Tareas o actividades", c: "Asignación de cada tarea" },
+                correct: "b",
+                justification: "Cada barra horizontal representa una actividad específica.",
+                image: null
+            },
+            34: {
+                text: "¿Qué se puede determinar fácilmente en un diagrama de Gantt?",
+                options: { a: "Costos del proyecto", b: "Responsabilidades de empleados", c: "Superposición de tareas" },
+                correct: "c",
+                justification: "Permite ver qué tareas se realizan paralelamente.",
+                image: null
+            },
+            35: {
+                text: "¿Cuál es una ventaja clave de usar Gantt?",
+                options: { a: "Simplifica la comunicación", b: "Aumenta la complejidad", c: "Oculta información importante" },
+                correct: "a",
+                justification: "Facilita que el equipo comprenda el cronograma.",
+                image: null
+            },
+            36: {
+                text: "¿Cuál es un objetivo principal de prototipado?",
+                options: { a: "Entregar producto finalizado", b: "Comprender especificidades del producto", c: "Generar documentación exhaustiva", d: "Implementar todas las características" },
+                correct: "b",
+                justification: "Permite visualizar requisitos tempranos.",
+                image: null
+            },
+            37: {
+                text: "¿Cuál de estos NO es artefacto en Scrum?",
+                options: { a: "Sprint Backlog", b: "Product Backlog", c: "Daily", d: "Incremento del producto" },
+                correct: "c",
+                justification: "Daily es un evento, los artefactos son tangibles.",
+                image: null
+            },
+            38: {
+                text: "Rol responsable de garantizar que se sigan las reglas de Scrum y eliminar obstáculos:",
+                options: { a: "Product Owner", b: "Scrum Master", c: "Stakeholder", d: "Equipo Scrum" },
+                correct: "b",
+                justification: "El Scrum Master facilita y ayuda a eliminar impedimentos.",
+                image: null
+            },
+            39: {
+                text: "¿Cuál es el propósito de Sprint Planning?",
+                options: { a: "Revisar progreso anterior", b: "Identificar riesgos", c: "Planificar trabajo del próximo Sprint", d: "Evaluar calidad" },
+                correct: "c",
+                justification: "Es donde el equipo decide objetivos del ciclo.",
+                image: null
+            },
+            40: {
+                text: "¿Qué caracteriza a Waterfall?",
+                options: { a: "Iterativo y cíclico", b: "Lineal y secuencial", c: "Entrega continua", d: "Evaluación constante de riesgos" },
+                correct: "b",
+                justification: "Sigue orden: Requisitos -> Diseño -> Desarrollo -> Pruebas.",
+                image: null
+            },
+            41: {
+                text: "¿Qué caracteriza a metodologías tradicionales?",
+                options: { a: "Procesos rígidos y documentación exhaustiva", b: "Adaptabilidad y colaboración", c: "Énfasis en documentación inicial" },
+                correct: "a",
+                justification: "Requieren definición completa antes de iniciar.",
+                image: null
+            },
+            42: {
+                text: "¿Qué representan las metodologías de software?",
+                options: { a: "Técnicas de marketing", b: "Diseño de hardware", c: "Técnicas y métodos organizativos", d: "Proceso único" },
+                correct: "c",
+                justification: "Son marcos que guían orden, comunicación y calidad.",
+                image: null
+            },
+            43: {
+                text: "¿Qué caracteriza a la Metodología en Espiral?",
+                options: { a: "Lineal y secuencial", b: "Entrega continua en iteraciones", c: "Iterativo y cíclico con énfasis en riesgo", d: "Planificación detallada inicial" },
+                correct: "c",
+                justification: "Combina iteración con análisis riguroso de riesgos.",
+                image: null
+            },
+            44: {
+                text: "¿Cuál describe mejor a Scrum?",
+                options: { a: "No define roles", b: "Entrega continua en Sprints", c: "Prioriza WIP limitado", d: "No incluye eventos" },
+                correct: "b",
+                justification: "Divide proyecto en bloques fijos para entregar valor.",
+                image: null
+            },
+            45: {
+                text: "Kanban tiene roles como Scrum Master y Product Owner",
+                options: { a: "Verdadero", b: "Falso" },
+                correct: "b",
+                justification: "Scrum tiene roles definidos rígidamente, Kanban no.",
+                image: null
+            },
+            46: {
+                text: "Según Historia de Usuario del pasajero, ¿criterio aceptación adecuado?",
+                options: { a: "Sistema muestra solo hora llegada", b: "Si hay retraso, mostrar duración", c: "No necesita criterios", d: "Información solo en horario laboral" },
+                correct: "b",
+                justification: "Criterio debe ser específico y verificable.",
+                image: null
+            },
+            47: {
+                text: "¿Cuál NO es ceremonia en Scrum?",
+                options: { a: "Sprint Planning", b: "Sprint Review", c: "Daily Standup", d: "Monthly Report" },
+                correct: "d",
+                justification: "Scrum no utiliza reportes mensuales.",
+                image: null
+            },
+            48: {
+                text: "¿Cómo ayuda Kanban en gestión del flujo?",
+                options: { a: "Entrega en grandes lotes", b: "Fechas fijas para tareas", c: "Limita trabajo en progreso y visualiza", d: "Ignora comunicación" },
+                correct: "c",
+                justification: "WIP Limit evita multitarea y enfoca al equipo.",
+                image: null
+            },
+            49: {
+                text: "¿Cuáles son dos grandes grupos de metodologías?",
+                options: { a: "Scrum y Kanban", b: "Ágiles y orientadas al cliente", c: "Ágiles y tradicionales", d: "Waterfall y Lean" },
+                correct: "c",
+                justification: "Distinción fundamental entre adaptables y predictivos.",
+                image: null
+            },
+            50: {
+                text: "¿Qué caracteriza a metodologías ágiles?",
+                options: { a: "Procesos rígidos", b: "Adaptabilidad y entrega continua", c: "Énfasis en documentación inicial" },
+                correct: "b",
+                justification: "Buscan entregar software frecuentemente.",
+                image: null
+            },
+            51: {
+                text: "¿Qué diferencia ágiles de tradicionales?",
+                options: { a: "Énfasis en documentación", b: "Falta de iteraciones", c: "Rigidez en procesos", d: "Adaptabilidad y flexibilidad" },
+                correct: "d",
+                justification: "Agilidad reside en capacidad de cambiar dirección.",
+                image: null
+            }
+        };
+
+        let selectedQuestions = [];
+        let currentQuestionIndex = 0;
+        let answers = {};
+        let quizStarted = false;
+
+        function selectRandomQuestions() {
+            const questionNumbers = Object.keys(allQuestions).map(Number).sort(() => Math.random() - 0.5);
+            selectedQuestions = questionNumbers.slice(0, 10);
+        }
+
+        function initializeQuiz() {
+            selectRandomQuestions();
+            currentQuestionIndex = 0;
+            answers = {};
+            quizStarted = true;
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const quizContainer = document.getElementById('quizContainer');
+            const currentQNum = selectedQuestions[currentQuestionIndex];
+            const question = allQuestions[currentQNum];
+
+            let html = `
+                <div class="question-container active">
+                    <div class="question-number">Pregunta ${currentQuestionIndex + 1} de 10</div>
+                    ${question.image ? `<div class="question-image"><img src="${question.image}" alt="Pregunta ${currentQNum}"></div>` : ''}
+                    <div class="question-text">${question.text}</div>
+                    <div class="options">
+            `;
+
+            for (const [key, value] of Object.entries(question.options)) {
+                const checked = answers[currentQNum]?.selected === key ? 'checked' : '';
+                html += `
+                    <label class="option">
+                        <input type="radio" name="answer" value="${key}" ${checked} onchange="selectAnswer('${key}')">
+                        <span><strong>${key.toUpperCase()}.</strong> ${value}</span>
+                    </label>
+                `;
+            }
+
+            html += `</div>`;
+
+            if (answers[currentQNum]) {
+                const isCorrect = answers[currentQNum].selected === question.correct;
+                const feedbackClass = isCorrect ? 'correct' : 'incorrect';
+                const feedbackText = isCorrect ? '✓ ¡Correcto!' : '✗ Incorrecto';
+
+                html += `
+                    <div class="feedback show ${feedbackClass}">
+                        <strong>${feedbackText}</strong>
+                        <div class="justification">
+                            <strong>Respuesta correcta: ${question.correct.toUpperCase()}. ${question.options[question.correct]}</strong><br>
+                            <strong>Justificación:</strong> ${question.justification}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="buttons">
+                    <button class="btn-next" onclick="nextQuestion()" ${!answers[currentQNum] ? 'disabled' : ''}>
+                        ${currentQuestionIndex === 9 ? 'Finalizar' : 'Siguiente'}
+                    </button>
+                </div>
+            `;
+
+            quizContainer.innerHTML = html;
+            updateProgress();
+        }
+
+        function selectAnswer(option) {
+            const currentQNum = selectedQuestions[currentQuestionIndex];
+            const question = allQuestions[currentQNum];
+
+            answers[currentQNum] = {
+                selected: option,
+                correct: question.correct,
+                text: question.text,
+                justification: question.justification
+            };
+
+            renderQuestion();
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < 9) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / 10) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('counter').textContent = `Pregunta ${currentQuestionIndex + 1} de 10`;
+        }
+
+        function showResults() {
+            let correctCount = 0;
+            let resultsList = '';
+
+            selectedQuestions.forEach((qNum, index) => {
+                const answer = answers[qNum];
+                const isCorrect = answer.selected === answer.correct;
+
+                if (isCorrect) correctCount++;
+
+                if (!isCorrect) {
+                    resultsList += `
+                        <div class="result-item">
+                            <div class="result-question">Pregunta ${index + 1}: ${answer.text}</div>
+                            <div class="result-answer">Tu respuesta: <strong>${answer.selected.toUpperCase()}. ${allQuestions[qNum].options[answer.selected]}</strong></div>
+                            <div class="result-answer">Respuesta correcta: <strong>${answer.correct.toUpperCase()}. ${allQuestions[qNum].options[answer.correct]}</strong></div>
+                            <div class="result-justification"><strong>Justificación:</strong> ${answer.justification}</div>
+                        </div>
+                    `;
+                }
+            });
+
+            let scoreMessage = '';
+            if (correctCount === 10) scoreMessage = '¡Excelente! Respondiste todas correctamente';
+            else if (correctCount >= 8) scoreMessage = '¡Muy bien! Casi perfecto';
+            else if (correctCount >= 6) scoreMessage = 'Buen trabajo, pero puedes mejorar';
+            else scoreMessage = 'Necesitas repasar más';
+
+            document.getElementById('quizContainer').style.display = 'none';
+            document.getElementById('resultsContainer').classList.add('show');
+            document.getElementById('finalScore').textContent = `${correctCount}/10`;
+            document.getElementById('scoreMessage').textContent = scoreMessage;
+            document.getElementById('resultsList').innerHTML = resultsList || '<p style="text-align: center; color: #28a745; font-size: 18px;">¡Todas las respuestas fueron correctas! 🎉</p>';
+        }
+
+        // Iniciar con botón
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeQuiz();
+        });
+    </script>
+</body>
+</html>
