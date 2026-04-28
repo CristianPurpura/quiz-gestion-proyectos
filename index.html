@@ -95,6 +95,14 @@
             font-weight: 500;
         }
 
+        .question-note {
+            margin-top: -12px;
+            margin-bottom: 18px;
+            font-size: 14px;
+            color: #667eea;
+            font-style: italic;
+        }
+
         .options {
             display: flex;
             flex-direction: column;
@@ -494,9 +502,10 @@
             },
             28: {
                 text: "¿Cuál es una característica común de Gantt?",
+                note: "Debes marcar ambas respuestas correctas: A y B. No basta con elegir solo una.",
                 options: { a: "Capacidad de asignar recursos", b: "Actualización en tiempo real", c: "Representación de jerarquía organizativa" },
-                correct: "a",
-                justification: "Permite asociar responsables o materiales a cada bloque.",
+                correct: ["a", "b"],
+                justification: "Gantt permite asociar responsables o materiales a cada bloque y también visualizar/actualizar el avance de forma temporal; por eso las respuestas correctas son A y B juntas.",
                 image: null
             },
             29: {
@@ -667,6 +676,32 @@
         let answers = {};
         let quizStarted = false;
 
+        function getCorrectAnswers(question) {
+            return Array.isArray(question.correct) ? question.correct : [question.correct];
+        }
+
+        function normalizeSelections(selection) {
+            return Array.isArray(selection) ? [...selection].sort() : [selection];
+        }
+
+        function isAnswerCorrect(question, selection) {
+            const correctAnswers = normalizeSelections(getCorrectAnswers(question));
+            const selectedAnswers = normalizeSelections(selection).filter(Boolean);
+            if (correctAnswers.length !== selectedAnswers.length) {
+                return false;
+            }
+            return correctAnswers.every((answer) => selectedAnswers.includes(answer));
+        }
+
+        function formatSelections(question, selection) {
+            const selectedAnswers = normalizeSelections(selection).filter(Boolean);
+            return selectedAnswers.map((key) => `${key.toUpperCase()}. ${question.options[key]}`).join(" y ");
+        }
+
+        function getQuestionState(questionNumber) {
+            return answers[questionNumber] || null;
+        }
+
         function selectRandomQuestions() {
             const questionNumbers = Object.keys(allQuestions).map(Number).sort(() => Math.random() - 0.5);
             selectedQuestions = questionNumbers.slice(0, 10);
@@ -684,20 +719,26 @@
             const quizContainer = document.getElementById('quizContainer');
             const currentQNum = selectedQuestions[currentQuestionIndex];
             const question = allQuestions[currentQNum];
+            const isMultiAnswer = Array.isArray(question.correct);
+            const currentState = getQuestionState(currentQNum);
+            const selectedValues = Array.isArray(currentState?.selected) ? currentState.selected : [];
 
             let html = `
                 <div class="question-container active">
                     <div class="question-number">Pregunta ${currentQuestionIndex + 1} de 10</div>
                     ${question.image ? `<div class="question-image"><img src="${question.image}" alt="Pregunta ${currentQNum}"></div>` : ''}
                     <div class="question-text">${question.text}</div>
+                    ${question.note ? `<div class="question-note">${question.note}</div>` : ''}
                     <div class="options">
             `;
 
             for (const [key, value] of Object.entries(question.options)) {
-                const checked = answers[currentQNum]?.selected === key ? 'checked' : '';
+                const checked = isMultiAnswer ? selectedValues.includes(key) : currentState?.selected === key ? 'checked' : '';
+                const inputType = isMultiAnswer ? 'checkbox' : 'radio';
+                const inputHandler = isMultiAnswer ? `toggleMultiAnswer('${key}')` : `selectAnswer('${key}')`;
                 html += `
                     <label class="option">
-                        <input type="radio" name="answer" value="${key}" ${checked} onchange="selectAnswer('${key}')">
+                        <input type="${inputType}" ${!isMultiAnswer ? 'name="answer"' : ''} value="${key}" ${checked} onchange="${inputHandler}">
                         <span><strong>${key.toUpperCase()}.</strong> ${value}</span>
                     </label>
                 `;
@@ -705,16 +746,19 @@
 
             html += `</div>`;
 
-            if (answers[currentQNum]) {
-                const isCorrect = answers[currentQNum].selected === question.correct;
+            if (currentState?.submitted || (!isMultiAnswer && currentState)) {
+                const isCorrect = isAnswerCorrect(question, currentState.selected);
                 const feedbackClass = isCorrect ? 'correct' : 'incorrect';
                 const feedbackText = isCorrect ? '✓ ¡Correcto!' : '✗ Incorrecto';
+                const correctText = formatSelections(question, getCorrectAnswers(question));
+                const selectedText = formatSelections(question, currentState.selected);
 
                 html += `
                     <div class="feedback show ${feedbackClass}">
                         <strong>${feedbackText}</strong>
                         <div class="justification">
-                            <strong>Respuesta correcta: ${question.correct.toUpperCase()}. ${question.options[question.correct]}</strong><br>
+                            <strong>Tu respuesta: ${selectedText}</strong><br>
+                            <strong>Respuesta correcta: ${correctText}</strong><br>
                             <strong>Justificación:</strong> ${question.justification}
                         </div>
                     </div>
@@ -723,9 +767,15 @@
 
             html += `
                 <div class="buttons">
-                    <button class="btn-next" onclick="nextQuestion()" ${!answers[currentQNum] ? 'disabled' : ''}>
-                        ${currentQuestionIndex === 9 ? 'Finalizar' : 'Siguiente'}
-                    </button>
+                    ${isMultiAnswer && !currentState?.submitted ? `
+                        <button class="btn-next" onclick="submitMultiAnswer()" ${selectedValues.length === 0 ? 'disabled' : ''}>
+                            Comprobar respuestas
+                        </button>
+                    ` : `
+                        <button class="btn-next" onclick="nextQuestion()" ${!currentState ? 'disabled' : ''}>
+                            ${currentQuestionIndex === 9 ? 'Finalizar' : 'Siguiente'}
+                        </button>
+                    `}
                 </div>
             `;
 
@@ -742,6 +792,43 @@
                 correct: question.correct,
                 text: question.text,
                 justification: question.justification
+            };
+
+            renderQuestion();
+        }
+
+        function toggleMultiAnswer(option) {
+            const currentQNum = selectedQuestions[currentQuestionIndex];
+            const question = allQuestions[currentQNum];
+            const currentState = getQuestionState(currentQNum);
+            const currentSelected = Array.isArray(currentState?.selected) ? [...currentState.selected] : [];
+
+            const nextSelected = currentSelected.includes(option)
+                ? currentSelected.filter((value) => value !== option)
+                : [...currentSelected, option];
+
+            answers[currentQNum] = {
+                selected: nextSelected,
+                correct: question.correct,
+                text: question.text,
+                justification: question.justification,
+                submitted: false
+            };
+
+            renderQuestion();
+        }
+
+        function submitMultiAnswer() {
+            const currentQNum = selectedQuestions[currentQuestionIndex];
+            const currentState = getQuestionState(currentQNum);
+
+            if (!currentState || !Array.isArray(currentState.selected) || currentState.selected.length === 0) {
+                return;
+            }
+
+            answers[currentQNum] = {
+                ...currentState,
+                submitted: true
             };
 
             renderQuestion();
@@ -768,16 +855,17 @@
 
             selectedQuestions.forEach((qNum, index) => {
                 const answer = answers[qNum];
-                const isCorrect = answer.selected === answer.correct;
+                const isCorrect = isAnswerCorrect(allQuestions[qNum], answer.selected);
 
                 if (isCorrect) correctCount++;
 
                 if (!isCorrect) {
+                    const question = allQuestions[qNum];
                     resultsList += `
                         <div class="result-item">
                             <div class="result-question">Pregunta ${index + 1}: ${answer.text}</div>
-                            <div class="result-answer">Tu respuesta: <strong>${answer.selected.toUpperCase()}. ${allQuestions[qNum].options[answer.selected]}</strong></div>
-                            <div class="result-answer">Respuesta correcta: <strong>${answer.correct.toUpperCase()}. ${allQuestions[qNum].options[answer.correct]}</strong></div>
+                            <div class="result-answer">Tu respuesta: <strong>${formatSelections(question, answer.selected)}</strong></div>
+                            <div class="result-answer">Respuesta correcta: <strong>${formatSelections(question, getCorrectAnswers(question))}</strong></div>
                             <div class="result-justification"><strong>Justificación:</strong> ${answer.justification}</div>
                         </div>
                     `;
