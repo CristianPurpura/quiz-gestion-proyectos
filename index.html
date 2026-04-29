@@ -675,6 +675,7 @@
         let currentQuestionIndex = 0;
         let answers = {};
         let quizStarted = false;
+        const QUESTION_DECK_STORAGE_KEY = 'quizQuestionDeck';
 
         function getCorrectAnswers(question) {
             return Array.isArray(question.correct) ? question.correct : [question.correct];
@@ -702,9 +703,39 @@
             return answers[questionNumber] || null;
         }
 
+        function shuffleArray(values) {
+            return [...values].sort(() => Math.random() - 0.5);
+        }
+
+        function loadQuestionDeck() {
+            try {
+                const storedValue = localStorage.getItem(QUESTION_DECK_STORAGE_KEY);
+                return storedValue ? JSON.parse(storedValue) : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function saveQuestionDeck(questionNumbers) {
+            try {
+                localStorage.setItem(QUESTION_DECK_STORAGE_KEY, JSON.stringify(questionNumbers));
+            } catch (error) {
+                // Si el navegador bloquea localStorage, el quiz sigue funcionando sin mazo persistente.
+            }
+        }
+
+        function buildFreshQuestionDeck() {
+            return shuffleArray(Object.keys(allQuestions).map(Number));
+        }
+
         function selectRandomQuestions() {
-            const questionNumbers = Object.keys(allQuestions).map(Number).sort(() => Math.random() - 0.5);
-            selectedQuestions = questionNumbers.slice(0, 10);
+            const storedDeck = loadQuestionDeck();
+            const deck = storedDeck.length >= 10
+                ? storedDeck
+                : [...storedDeck, ...buildFreshQuestionDeck()];
+
+            selectedQuestions = deck.slice(0, 10);
+            saveQuestionDeck(deck.slice(10));
         }
 
         function initializeQuiz() {
