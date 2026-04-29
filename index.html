@@ -502,7 +502,7 @@
             },
             28: {
                 text: "¿Cuál es una característica común de Gantt?",
-                note: "Debes marcar ambas respuestas correctas: A y B. No basta con elegir solo una.",
+                note: "Puede haber una o más respuestas correctas. Marca todas las que correspondan.",
                 options: { a: "Capacidad de asignar recursos", b: "Actualización en tiempo real", c: "Representación de jerarquía organizativa" },
                 correct: ["a", "b"],
                 justification: "Gantt permite asociar responsables o materiales a cada bloque y también visualizar/actualizar el avance de forma temporal; por eso las respuestas correctas son A y B juntas.",
@@ -733,7 +733,7 @@
             `;
 
             for (const [key, value] of Object.entries(question.options)) {
-                const checked = isMultiAnswer ? selectedValues.includes(key) : currentState?.selected === key ? 'checked' : '';
+                const checked = isMultiAnswer ? (selectedValues.includes(key) ? 'checked' : '') : (currentState?.selected === key ? 'checked' : '');
                 const inputType = isMultiAnswer ? 'checkbox' : 'radio';
                 const inputHandler = isMultiAnswer ? `toggleMultiAnswer('${key}')` : `selectAnswer('${key}')`;
                 html += `
